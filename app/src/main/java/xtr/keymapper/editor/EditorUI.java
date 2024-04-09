@@ -1,5 +1,6 @@
 package xtr.keymapper.editor;
 
+import static xtr.keymapper.InputEventCodes.VALID_BTN_TO_TOUCH;
 import static xtr.keymapper.dpad.Dpad.MAX_DPADS;
 import static xtr.keymapper.keymap.KeymapProfiles.MOUSE_RIGHT;
 
@@ -43,6 +44,7 @@ import xtr.keymapper.mouse.MouseAimSettings;
 import xtr.keymapper.server.RemoteServiceHelper;
 import xtr.keymapper.swipekey.SwipeKey;
 import xtr.keymapper.swipekey.SwipeKeyView;
+import xtr.keymapper.touchpointer.EventData;
 
 public class EditorUI extends OnKeyEventListener.Stub {
 
@@ -124,18 +126,17 @@ public class EditorUI extends OnKeyEventListener.Stub {
     }
 
     @Override
-    public void onKeyEvent(String event) {
+    public void onKeyEvent(String line) {
         // line: /dev/input/event3 EV_KEY KEY_X DOWN
-        String[] input_event = event.split("\\s+");
-        String code = input_event[2];
+        EventData event = EventData.of(line);
 
-        // Ignore non key events
-        if(!input_event[1].equals("EV_KEY") || !code.contains("KEY_")) return;
+        // Ignore invalid events
+        if (event == null || !VALID_BTN_TO_TOUCH.contains(event.code)) return;
 
         // Incoming calls are not guaranteed to be executed on the main thread
         mHandler.post(() -> {
             if (keyInFocus != null)
-                keyInFocus.setText(input_event[2].substring(4));
+                keyInFocus.setText(event.code.substring(4));
         });
     }
 
