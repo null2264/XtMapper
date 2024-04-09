@@ -1,10 +1,8 @@
-name: Build and Release APK
+name: Build
 
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "v*"
 
 jobs:
   build:
@@ -36,13 +34,8 @@ jobs:
 
     - name: Build with Gradle
       run: ./gradlew assembleRelease
-        
-    - name: Release
-      uses: "marvinpinto/action-automatic-releases@latest"
-      with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        prerelease: false
-        draft: true
-        files: |
-          app/build/outputs/apk/release/*.apk
          
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        path: app/build/outputs/apk/release/*.apk
