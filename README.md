@@ -20,6 +20,16 @@
 https://xtr126.github.io/XtMapper-docs/guides/about  
 [Watch video on YouTube](https://www.youtube.com/watch?v=Slcu43xBV3M)  
 
+### Null fork
+
+This is my personal fork, made specifically for my keymappings for Genshin Impact
+
+**Changes**:
+- (Some) mouse buttons can be mapped for touch
+- Middle Mouse Button support for Waydroid (requires my fork of [wayland-getevent](https://github.com/null2264/wayland-getevent))
+  - MMB can be used to toggle aim mode
+- AppID `xtr.keymapper` -> `xtr.keymapper.null`, allowing null fork app to co-exists with original app
+
 ## Development
 
 ### Build
