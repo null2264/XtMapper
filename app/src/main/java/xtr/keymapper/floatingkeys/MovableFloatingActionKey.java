@@ -80,17 +80,18 @@ public class MovableFloatingActionKey extends FrameLayout implements View.OnTouc
     }
 
     public String getData(){
-        return "KEY_" + getText() + " " + getX() + " " + getY() + " " + getPivotX();
+        return (getText().startsWith("BTN_") ? "" : "KEY_") + getText() + " " + getX() + " " + getY() + " " + getPivotX();
     }
 
     public void setText(String s) {
-        float scale = 1 + s.length() / 10f;
+        String actualText = s.startsWith("BTN_") ? s : s.substring(4);
+        float scale = 1 + actualText.length() / 10f;
         setScaleX(scale);
         setScaleY(scale);
 
-        if (s.length() > 3) {
-            key.setText(s, 20 - s.length());
-        } else key.setText(s, 30);
+        if (actualText.length() > 3) {
+            key.setText(actualText, 20 - actualText.length());
+        } else key.setText(actualText, 30);
     }
 
     public String getText(){

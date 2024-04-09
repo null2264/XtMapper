@@ -136,7 +136,7 @@ public class EditorUI extends OnKeyEventListener.Stub {
         // Incoming calls are not guaranteed to be executed on the main thread
         mHandler.post(() -> {
             if (keyInFocus != null)
-                keyInFocus.setText(event.code.substring(4));
+                keyInFocus.setText(event.code);
         });
     }
 
@@ -303,10 +303,10 @@ public class EditorUI extends OnKeyEventListener.Stub {
 
     private void setDpadKeys(DpadBinding binding, Dpad dpad) {
         if (dpad != null) { // strip KEY_
-            binding.keyUp.setText(dpad.keycodes.Up.substring(4));
-            binding.keyDown.setText(dpad.keycodes.Down.substring(4));
-            binding.keyLeft.setText(dpad.keycodes.Left.substring(4));
-            binding.keyRight.setText(dpad.keycodes.Right.substring(4));
+            binding.keyUp.setText(dpad.keycodes.Up);
+            binding.keyDown.setText(dpad.keycodes.Down);
+            binding.keyLeft.setText(dpad.keycodes.Left);
+            binding.keyRight.setText(dpad.keycodes.Right);
         }
         for (TextView key : new TextView[]{binding.keyUp, binding.keyDown, binding.keyRight, binding.keyLeft}) {
             key.setOnClickListener(
@@ -330,7 +330,7 @@ public class EditorUI extends OnKeyEventListener.Stub {
     private void addKey(KeymapProfileKey key) {
         MovableFloatingActionKey floatingKey = new MovableFloatingActionKey(context, keyList::remove);
 
-        floatingKey.setText(key.code.substring(4));
+        floatingKey.setText(key.code);
         floatingKey.animate()
                 .x(key.x)
                 .y(key.y)
