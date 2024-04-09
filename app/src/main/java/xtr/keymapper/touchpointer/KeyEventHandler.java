@@ -81,16 +81,10 @@ public class KeyEventHandler {
         eventHandler = null;
     }
 
-    public static class KeyEvent {
-        public String code;
-        public int action;
-    }
-
     public void handleEvent(String line) throws RemoteException {
         // line: EV_KEY KEY_X DOWN
-
-        KeyEvent event = getEvent(line);
-        if(event == null) return;
+        EventData event = EventData.of(line);
+        if (event == null) return;
 
         KeymapConfig keymapConfig = mInput.getKeymapConfig();
 
@@ -110,39 +104,22 @@ public class KeyEventHandler {
                 dpadHandler.handleEvent(event.code, event.action);
         }
 
-        ArrayList<KeymapProfileKey> keyList = mInput.getKeymapProfile().keys;
-        for (KeymapProfileKey key : keyList)
-            if (event.code.equals(key.code))
-                mInput.injectEvent(key.x, key.y, event.action, keyList.indexOf(key));
+        handleTouch(event);
 
         for (SwipeKeyHandler swipeKeyHandler : swipeKeyHandlers)
             swipeKeyHandler.handleEvent(event, mInput, pidProvider, eventHandler, keymapConfig.swipeDelayMs);
     }
 
-    private void detectCtrlAltKeys(KeyEvent event) {
-        if (event.code.contains("CTRL")) ctrlKeyPressed = event.action == DOWN;
-        if (event.code.contains("ALT")) altKeyPressed = event.action == DOWN;
+    public void handleTouch(EventData event) {
+        ArrayList<KeymapProfileKey> keyList = mInput.getKeymapProfile().keys;
+        for (KeymapProfileKey key : keyList)
+            if (event.code.equals(key.code))
+                mInput.injectEvent(key.x, key.y, event.action, keyList.indexOf(key));
     }
 
-    private KeyEvent getEvent(String line){
-        KeyEvent event = new KeyEvent();
-        // line: EV_KEY KEY_X DOWN
-        String[] input_event = line.split("\\s+");
-        if (!input_event[1].equals("EV_KEY")) return null;
-        event.code = input_event[2];
-        if (!event.code.contains("KEY_")) return null;
-
-        switch (input_event[3]) {
-            case "UP":
-                event.action = UP;
-                break;
-            case "DOWN":
-                event.action = DOWN;
-                break;
-            default:
-                return null;
-        }
-        return event;
+    private void detectCtrlAltKeys(EventData event) {
+        if (event.code.contains("CTRL")) ctrlKeyPressed = event.action == DOWN;
+        if (event.code.contains("ALT")) altKeyPressed = event.action == DOWN;
     }
 
     private void handleKeyboardShortcuts(int keycode) throws RemoteException {
@@ -164,7 +141,7 @@ public class KeyEventHandler {
     }
 
     public void handleKeyboardShortcutEvent(String line) throws RemoteException {
-        KeyEvent event = getEvent(line);
+        EventData event = EventData.of(line);
         if (event != null) {
             detectCtrlAltKeys(event);
             int i = Utils.obtainIndex(event.code);

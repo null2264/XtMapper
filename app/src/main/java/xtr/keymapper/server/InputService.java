@@ -16,6 +16,7 @@ import android.view.View;
 import xtr.keymapper.IRemoteServiceCallback;
 import xtr.keymapper.keymap.KeymapConfig;
 import xtr.keymapper.keymap.KeymapProfile;
+import xtr.keymapper.touchpointer.EventData;
 import xtr.keymapper.touchpointer.KeyEventHandler;
 import xtr.keymapper.touchpointer.MouseEventHandler;
 
@@ -175,33 +176,8 @@ public class InputService implements IInputInterface {
     }
 
     public void sendWaylandMouseEvent(String line) {
-        String[] input_event = line.split("\\s+");
-        int value = Integer.parseInt(input_event[3]);
-        switch (input_event[2]) {
-            case "ABS_X":
-                mouseEventHandler.evAbsX(value);
-                break;
-            case "ABS_Y":
-                mouseEventHandler.evAbsY(value);
-                break;
-            case "REL_WHEEL":
-                mouseEventHandler.handleEvent(REL_WHEEL, value);
-                break;
-            case "BTN_LEFT":
-                mouseEventHandler.handleEvent(BTN_MOUSE, value);
-                break;
-            case "BTN_RIGHT":
-                mouseEventHandler.handleEvent(BTN_RIGHT, value);
-                break;
-            case "REL_X":
-                if (mouseEventHandler.mouseAimActive)
-                    mouseEventHandler.handleEvent(REL_X, value);
-                break;
-            case "REL_Y":
-                if (mouseEventHandler.mouseAimActive)
-                    mouseEventHandler.handleEvent(REL_Y, value);
-                break;
-        }
+        EventData event = EventData.of(line);
+        if (event == null) return;
+        mouseEventHandler.handleEvent(event);
     }
-
 }

@@ -93,6 +93,34 @@ public class MouseEventHandler {
             mInput.injectEvent(rightClick.x, rightClick.y, value, pointerIdRightClick);
     }
 
+    public void handleEvent(EventData event) {
+        switch (event.code) {
+            case "ABS_X":
+                evAbsX(event.action);
+                break;
+            case "ABS_Y":
+                evAbsY(event.action);
+                break;
+            case "REL_WHEEL":
+                handleEvent(REL_WHEEL, event.action);
+                break;
+            case "BTN_LEFT":
+                handleEvent(BTN_MOUSE, event.action);
+                break;
+            case "BTN_RIGHT":
+                handleEvent(BTN_RIGHT, event.action);
+                break;
+            case "REL_X":
+                if (mouseAimActive)
+                    handleEvent(REL_X, event.action);
+                break;
+            case "REL_Y":
+                if (mouseAimActive)
+                    handleEvent(REL_Y, event.action);
+                break;
+        }
+    }
+
     public void handleEvent(int code, int value) {
         if (mouseAimHandler != null && mouseAimActive) {
             mouseAimHandler.handleEvent(code, value, this::handleMouseEvent);
