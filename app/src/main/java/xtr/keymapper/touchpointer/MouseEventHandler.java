@@ -13,6 +13,8 @@ import xtr.keymapper.keymap.KeymapProfile;
 import xtr.keymapper.keymap.KeymapProfileKey;
 import xtr.keymapper.server.IInputInterface;
 
+import java.util.List;
+
 public class MouseEventHandler {
     int sensitivity = 1;
     int scroll_speed_multiplier = 1;
@@ -100,24 +102,24 @@ public class MouseEventHandler {
                 if (mouseAimActive) {
                     Integer input = KNOWN_INPUT.get(event.code);
                     if (input == null) break;
-                    handleEvent(input, event.action);
+                    handleEvent(input, event.action, event.code);
                 }
                 break;
             default:
                 Integer input = KNOWN_INPUT.get(event.code);
                 if (input == null) break;
-                handleEvent(input, event.action);
+                handleEvent(input, event.action, event.code);
                 break;
         }
     }
 
-    public void handleEvent(int code, int value) {
+    public void handleEvent(int code, int value, String codeDisplayName) {
         if (mouseAimHandler != null && mouseAimActive) {
-            mouseAimHandler.handleEvent(code, value, this::handleMouseEvent);
-        } else handleMouseEvent(code, value);
+            mouseAimHandler.handleEvent(code, value, (c, v) -> handleMouseEvent(c, v, codeDisplayName));
+        } else handleMouseEvent(code, value, codeDisplayName);
     }
 
-    private void handleMouseEvent(int code, int value) {
+    private void handleMouseEvent(int code, int value, String codeDisplayName) {
         KeymapConfig keymapConfig = mInput.getKeymapConfig();
         if (mInput.getKeyEventHandler().ctrlKeyPressed && pointer_down)
             if (keymapConfig.ctrlDragMouseGesture) {
@@ -156,7 +158,15 @@ public class MouseEventHandler {
             case BTN_MIDDLE:
             case BTN_EXTRA:
             case BTN_SIDE:
-                if (value == 1) triggerMouseAim();
+                List<KeymapProfileKey> keys = mInput.getKeymapProfile().keys;
+                boolean shouldAim = true;
+                for (KeymapProfileKey key : keys) {
+                    if (codeDisplayName.equals(key.code)) {
+                        shouldAim = false;
+                        break;
+                    }
+                }
+                if (value == 1 && shouldAim) triggerMouseAim();
 
             case REL_WHEEL:
                 if (mInput.getKeyEventHandler().ctrlKeyPressed && keymapConfig.ctrlMouseWheelZoom)

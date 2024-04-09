@@ -172,7 +172,7 @@ public class InputService implements IInputInterface {
      * Called from native code to send mouse event to client
      */
     public void sendMouseEvent(int code, int value) {
-        if (!stopEvents) mouseEventHandler.handleEvent(code, value);
+        if (!stopEvents) mouseEventHandler.handleEvent(code, value, "");
     }
 
     public void sendWaylandMouseEvent(String line) {
