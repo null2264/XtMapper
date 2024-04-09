@@ -99,7 +99,8 @@ public class MouseEventHandler {
             case "REL_X":
                 if (mouseAimActive) {
                     Integer input = KNOWN_INPUT.get(event.code);
-                    if (input != null) handleEvent(input, event.action);
+                    if (input == null) break;
+                    handleEvent(input, event.action);
                 }
                 break;
             default:
