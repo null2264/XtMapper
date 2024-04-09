@@ -54,7 +54,7 @@ android {
 
     applicationVariants.configureEach {
         it.outputs.every {
-            it.outputFileName = "XtMapper-${it.name}-v${defaultConfig.versionName}.apk"
+            it.outputFileName = "XtMapperNull-${it.name}-v${defaultConfig.versionName}.apk"
         }
     }
 
