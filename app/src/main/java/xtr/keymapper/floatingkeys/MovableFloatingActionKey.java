@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import static xtr.keymapper.Utils.stripIfKey;
+
 public class MovableFloatingActionKey extends FrameLayout implements View.OnTouchListener {
 
     public FloatingActionKey key;
@@ -84,7 +86,7 @@ public class MovableFloatingActionKey extends FrameLayout implements View.OnTouc
     }
 
     public void setText(String s) {
-        String actualText = s.startsWith("BTN_") ? s : s.substring(4);
+        String actualText = stripIfKey(s);
         float scale = 1 + actualText.length() / 10f;
         setScaleX(scale);
         setScaleY(scale);

@@ -1,6 +1,7 @@
 package xtr.keymapper.editor;
 
 import static xtr.keymapper.InputEventCodes.VALID_BTN_TO_TOUCH;
+import static xtr.keymapper.Utils.stripIfKey;
 import static xtr.keymapper.dpad.Dpad.MAX_DPADS;
 import static xtr.keymapper.keymap.KeymapProfiles.MOUSE_RIGHT;
 
@@ -131,7 +132,8 @@ public class EditorUI extends OnKeyEventListener.Stub {
         EventData event = EventData.of(line);
 
         // Ignore invalid events
-        if (event == null || !VALID_BTN_TO_TOUCH.contains(event.code)) return;
+        if (event == null) return;
+        if (!event.code.startsWith("KEY_") && !VALID_BTN_TO_TOUCH.contains(event.code)) return;
 
         // Incoming calls are not guaranteed to be executed on the main thread
         mHandler.post(() -> {
@@ -303,14 +305,14 @@ public class EditorUI extends OnKeyEventListener.Stub {
 
     private void setDpadKeys(DpadBinding binding, Dpad dpad) {
         if (dpad != null) { // strip KEY_
-            binding.keyUp.setText(dpad.keycodes.Up);
-            binding.keyDown.setText(dpad.keycodes.Down);
-            binding.keyLeft.setText(dpad.keycodes.Left);
-            binding.keyRight.setText(dpad.keycodes.Right);
+            binding.keyUp.setText(stripIfKey(dpad.keycodes.Up));
+            binding.keyDown.setText(stripIfKey(dpad.keycodes.Down));
+            binding.keyLeft.setText(stripIfKey(dpad.keycodes.Left));
+            binding.keyRight.setText(stripIfKey(dpad.keycodes.Right));
         }
         for (TextView key : new TextView[]{binding.keyUp, binding.keyDown, binding.keyRight, binding.keyLeft}) {
             key.setOnClickListener(
-                    view -> keyInFocus = k -> ((TextView)view).setText(k));
+                    view -> keyInFocus = k -> ((TextView)view).setText(stripIfKey(k)));
         }
     }
 

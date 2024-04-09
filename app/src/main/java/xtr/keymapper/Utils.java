@@ -26,4 +26,7 @@ public class Utils {
         return new BufferedReader(new InputStreamReader(sh.getInputStream()));
     }
 
+    public static String stripIfKey(String s) {
+        return s.startsWith("BTN_") ? s : s.substring(4);
+    }
 }
