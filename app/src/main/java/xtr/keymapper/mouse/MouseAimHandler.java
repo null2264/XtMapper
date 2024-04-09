@@ -1,11 +1,6 @@
 package xtr.keymapper.mouse;
 
-import static xtr.keymapper.InputEventCodes.BTN_EXTRA;
-import static xtr.keymapper.InputEventCodes.BTN_MOUSE;
-import static xtr.keymapper.InputEventCodes.BTN_RIGHT;
-import static xtr.keymapper.InputEventCodes.BTN_SIDE;
-import static xtr.keymapper.InputEventCodes.REL_X;
-import static xtr.keymapper.InputEventCodes.REL_Y;
+import static xtr.keymapper.InputEventCodes.*;
 import static xtr.keymapper.server.InputService.DOWN;
 import static xtr.keymapper.server.InputService.MOVE;
 import static xtr.keymapper.server.InputService.UP;
@@ -85,6 +80,7 @@ public class MouseAimHandler {
                 service.injectEvent(config.xleftClick, config.yleftClick, value, pointerIdMouse);
                 break;
 
+            case BTN_MIDDLE:
             case BTN_SIDE:
             case BTN_EXTRA:
             case BTN_RIGHT:
