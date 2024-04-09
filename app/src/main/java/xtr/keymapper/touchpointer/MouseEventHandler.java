@@ -95,31 +95,17 @@ public class MouseEventHandler {
             case "ABS_Y":
                 evAbsY(event.action);
                 break;
-            case "REL_WHEEL":
-                handleEvent(REL_WHEEL, event.action);
-                break;
-            case "BTN_LEFT":
-                handleEvent(BTN_MOUSE, event.action);
-                break;
-            case "BTN_RIGHT":
-                handleEvent(BTN_RIGHT, event.action);
-                break;
-            case "BTN_MIDDLE":
-                handleEvent(BTN_MIDDLE, event.action);
-                break;
-            case "BTN_EXTRA":
-                handleEvent(BTN_EXTRA, event.action);
-                break;
-            case "BTN_SIDE":
-                handleEvent(BTN_SIDE, event.action);
-                break;
-            case "REL_X":
-                if (mouseAimActive)
-                    handleEvent(REL_X, event.action);
-                break;
             case "REL_Y":
-                if (mouseAimActive)
-                    handleEvent(REL_Y, event.action);
+            case "REL_X":
+                if (mouseAimActive) {
+                    Integer input = KNOWN_INPUT.get(event.code);
+                    if (input != null) handleEvent(input, event.action);
+                }
+                break;
+            default:
+                Integer input = KNOWN_INPUT.get(event.code);
+                if (input == null) break;
+                handleEvent(input, event.action);
                 break;
         }
     }

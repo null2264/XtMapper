@@ -1,5 +1,7 @@
 package xtr.keymapper;
 
+import java.util.Map;
+
 // REF: linux/input-event-codes.h
 public class InputEventCodes {
     public static final int REL_X = 0;
@@ -13,4 +15,15 @@ public class InputEventCodes {
     public static final String[] ARROW_KEYS = {"KEY_UP", "KEY_DOWN", "KEY_LEFT", "KEY_RIGHT"};
     public static final String[] WASD_KEYS = {"KEY_W", "KEY_S", "KEY_A", "KEY_D"};
 
+    public static final Map<String, Integer> KNOWN_INPUT = Map.of(
+            "REL_X", REL_X,
+            "REL_Y", REL_Y,
+            "REL_WHEEL", REL_WHEEL,
+            "BTN_MOUSE", BTN_MOUSE,
+            "BTN_LEFT", BTN_MOUSE,
+            "BTN_RIGHT", BTN_RIGHT,
+            "BTN_MIDDLE", BTN_MIDDLE,
+            "BTN_SIDE", BTN_SIDE,
+            "BTN_EXTRA", BTN_EXTRA
+    );
 }
