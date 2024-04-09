@@ -1,12 +1,6 @@
 package xtr.keymapper.touchpointer;
 
-import static xtr.keymapper.InputEventCodes.BTN_EXTRA;
-import static xtr.keymapper.InputEventCodes.BTN_MOUSE;
-import static xtr.keymapper.InputEventCodes.BTN_RIGHT;
-import static xtr.keymapper.InputEventCodes.BTN_SIDE;
-import static xtr.keymapper.InputEventCodes.REL_WHEEL;
-import static xtr.keymapper.InputEventCodes.REL_X;
-import static xtr.keymapper.InputEventCodes.REL_Y;
+import static xtr.keymapper.InputEventCodes.*;
 import static xtr.keymapper.server.InputService.MOVE;
 
 import android.os.RemoteException;
@@ -110,6 +104,15 @@ public class MouseEventHandler {
             case "BTN_RIGHT":
                 handleEvent(BTN_RIGHT, event.action);
                 break;
+            case "BTN_MIDDLE":
+                handleEvent(BTN_MIDDLE, event.action);
+                break;
+            case "BTN_EXTRA":
+                handleEvent(BTN_EXTRA, event.action);
+                break;
+            case "BTN_SIDE":
+                handleEvent(BTN_SIDE, event.action);
+                break;
             case "REL_X":
                 if (mouseAimActive)
                     handleEvent(REL_X, event.action);
@@ -163,6 +166,7 @@ public class MouseEventHandler {
                 handleRightClick(value);
                 break;
 
+            case BTN_MIDDLE:
             case BTN_EXTRA:
             case BTN_SIDE:
                 if (value == 1) triggerMouseAim();
