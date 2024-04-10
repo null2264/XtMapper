@@ -45,7 +45,7 @@ import xtr.keymapper.mouse.MouseAimSettings;
 import xtr.keymapper.server.RemoteServiceHelper;
 import xtr.keymapper.swipekey.SwipeKey;
 import xtr.keymapper.swipekey.SwipeKeyView;
-import xtr.keymapper.touchpointer.EventData;
+import xtr.keymapper.touchpointer.InputEvent;
 
 public class EditorUI extends OnKeyEventListener.Stub {
 
@@ -129,7 +129,7 @@ public class EditorUI extends OnKeyEventListener.Stub {
     @Override
     public void onKeyEvent(String line) {
         // line: /dev/input/event3 EV_KEY KEY_X DOWN
-        EventData event = EventData.of(line);
+        InputEvent event = InputEvent.of(line);
 
         // Ignore invalid events
         if (event == null) return;

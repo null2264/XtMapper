@@ -89,7 +89,7 @@ public class MouseEventHandler {
             mInput.injectEvent(rightClick.x, rightClick.y, value, pointerIdRightClick);
     }
 
-    public void handleEvent(EventData event) {
+    public void handleEvent(InputEvent event) {
         switch (event.code) {
             case "ABS_X":
                 evAbsX(event.action);

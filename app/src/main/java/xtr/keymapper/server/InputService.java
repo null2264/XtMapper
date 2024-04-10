@@ -1,11 +1,5 @@
 package xtr.keymapper.server;
 
-import static xtr.keymapper.InputEventCodes.BTN_MOUSE;
-import static xtr.keymapper.InputEventCodes.BTN_RIGHT;
-import static xtr.keymapper.InputEventCodes.REL_WHEEL;
-import static xtr.keymapper.InputEventCodes.REL_X;
-import static xtr.keymapper.InputEventCodes.REL_Y;
-
 import android.os.Handler;
 import android.os.Looper;
 import android.os.RemoteException;
@@ -16,7 +10,7 @@ import android.view.View;
 import xtr.keymapper.IRemoteServiceCallback;
 import xtr.keymapper.keymap.KeymapConfig;
 import xtr.keymapper.keymap.KeymapProfile;
-import xtr.keymapper.touchpointer.EventData;
+import xtr.keymapper.touchpointer.InputEvent;
 import xtr.keymapper.touchpointer.KeyEventHandler;
 import xtr.keymapper.touchpointer.MouseEventHandler;
 
@@ -177,7 +171,7 @@ public class InputService implements IInputInterface {
     }
 
     public void sendWaylandMouseEvent(String line) {
-        EventData event = EventData.of(line);
+        InputEvent event = InputEvent.of(line);
         if (event == null) return;
         mouseEventHandler.handleEvent(event);
     }

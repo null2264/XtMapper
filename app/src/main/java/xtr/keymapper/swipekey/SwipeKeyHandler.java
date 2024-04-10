@@ -6,7 +6,7 @@ import static xtr.keymapper.server.InputService.MOVE;
 import android.os.Handler;
 
 import xtr.keymapper.server.IInputInterface;
-import xtr.keymapper.touchpointer.EventData;
+import xtr.keymapper.touchpointer.InputEvent;
 import xtr.keymapper.touchpointer.PidProvider;
 
 public class SwipeKeyHandler {
@@ -37,7 +37,7 @@ public class SwipeKeyHandler {
         }
     }
 
-    public void handleEvent(EventData event, IInputInterface service, PidProvider pidProvider, Handler handler, int swipeDelayMs) {
+    public void handleEvent(InputEvent event, IInputInterface service, PidProvider pidProvider, Handler handler, int swipeDelayMs) {
         SwipeEvent swipeEvent;
         if (event.code.equals(keycode1))
             swipeEvent = swipeEvent1;

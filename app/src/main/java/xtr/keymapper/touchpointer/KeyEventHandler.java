@@ -3,7 +3,6 @@ package xtr.keymapper.touchpointer;
 import static xtr.keymapper.keymap.KeymapConfig.KEY_ALT;
 import static xtr.keymapper.keymap.KeymapConfig.KEY_CTRL;
 import static xtr.keymapper.server.InputService.DOWN;
-import static xtr.keymapper.server.InputService.UP;
 import static xtr.keymapper.touchpointer.PointerId.dpadpid1;
 
 import android.os.Handler;
@@ -83,7 +82,7 @@ public class KeyEventHandler {
 
     public void handleEvent(String line) throws RemoteException {
         // line: EV_KEY KEY_X DOWN
-        EventData event = EventData.of(line);
+        InputEvent event = InputEvent.of(line);
         if (event == null) return;
 
         KeymapConfig keymapConfig = mInput.getKeymapConfig();
@@ -110,14 +109,14 @@ public class KeyEventHandler {
             swipeKeyHandler.handleEvent(event, mInput, pidProvider, eventHandler, keymapConfig.swipeDelayMs);
     }
 
-    public void handleTouch(EventData event) {
+    public void handleTouch(InputEvent event) {
         ArrayList<KeymapProfileKey> keyList = mInput.getKeymapProfile().keys;
         for (KeymapProfileKey key : keyList)
             if (event.code.equals(key.code))
                 mInput.injectEvent(key.x, key.y, event.action, keyList.indexOf(key));
     }
 
-    private void detectCtrlAltKeys(EventData event) {
+    private void detectCtrlAltKeys(InputEvent event) {
         if (event.code.contains("CTRL")) ctrlKeyPressed = event.action == DOWN;
         if (event.code.contains("ALT")) altKeyPressed = event.action == DOWN;
     }
@@ -141,7 +140,7 @@ public class KeyEventHandler {
     }
 
     public void handleKeyboardShortcutEvent(String line) throws RemoteException {
-        EventData event = EventData.of(line);
+        InputEvent event = InputEvent.of(line);
         if (event != null) {
             detectCtrlAltKeys(event);
             int i = Utils.obtainIndex(event.code);

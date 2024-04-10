@@ -2,12 +2,10 @@ package xtr.keymapper.touchpointer;
 
 import androidx.annotation.Nullable;
 
-import java.util.Arrays;
-
 import static xtr.keymapper.server.InputService.DOWN;
 import static xtr.keymapper.server.InputService.UP;
 
-public class EventData {
+public class InputEvent {
     public String code;
     public int action;
 
@@ -17,8 +15,8 @@ public class EventData {
     }
 
     @Nullable
-    public static EventData of(String line) {
-        EventData event = new EventData();
+    public static InputEvent of(String line) {
+        InputEvent event = new InputEvent();
         // line: EV_KEY KEY_X DOWN
         String[] input_event = line.split("\\s+");
         if (!isValidInput(input_event[1], input_event[2])) return null;
