@@ -21,6 +21,9 @@ https://xtr126.github.io/XtMapper-docs/guides/about
 [Watch video on YouTube](https://www.youtube.com/watch?v=Slcu43xBV3M)  
 
 ### Null fork
+> [!WARNING]
+> Made for Waydroid, may not work on OEM Android devices
+
 This is my personal fork, made specifically for my keymappings for Genshin Impact so that I don't have to use uinput method anymore
 
 #### Changes
