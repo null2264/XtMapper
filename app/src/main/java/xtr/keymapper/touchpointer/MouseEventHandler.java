@@ -169,8 +169,8 @@ public class MouseEventHandler {
                             break;
                         }
                     }
-                    if (event.action == 1)
-                        if (shouldAim) triggerMouseAim(); else mInput.getKeyEventHandler().handleTouch(event);
+                    if (event.action == 1 && shouldAim) triggerMouseAim();
+                    else mInput.getKeyEventHandler().handleTouch(event);
 
                 case REL_WHEEL:
                     if (mInput.getKeyEventHandler().ctrlKeyPressed && keymapConfig.ctrlMouseWheelZoom)
