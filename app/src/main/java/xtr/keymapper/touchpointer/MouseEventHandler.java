@@ -102,81 +102,85 @@ public class MouseEventHandler {
                 if (mouseAimActive) {
                     Integer input = KNOWN_INPUT.get(event.code);
                     if (input == null) break;
-                    handleEvent(input, event.action, event.code);
+                    actuallyHandleEvent(event);
                 }
                 break;
             default:
                 Integer input = KNOWN_INPUT.get(event.code);
                 if (input == null) break;
-                handleEvent(input, event.action, event.code);
+                actuallyHandleEvent(event);
                 break;
         }
     }
 
-    public void handleEvent(int code, int value, String codeDisplayName) {
+    private void actuallyHandleEvent(InputEvent event) {
         if (mouseAimHandler != null && mouseAimActive) {
-            mouseAimHandler.handleEvent(code, value, (c, v) -> handleMouseEvent(c, v, codeDisplayName));
-        } else handleMouseEvent(code, value, codeDisplayName);
+            mouseAimHandler.handleEvent(event, this::handleMouseEvent);
+        } else handleMouseEvent(event);
     }
 
-    private void handleMouseEvent(int code, int value, String codeDisplayName) {
+    private void handleMouseEvent(InputEvent event) {
         KeymapConfig keymapConfig = mInput.getKeymapConfig();
         if (mInput.getKeyEventHandler().ctrlKeyPressed && pointer_down)
             if (keymapConfig.ctrlDragMouseGesture) {
-                pointer_down = pinchZoom.handleEvent(code, value);
+                pointer_down = pinchZoom.handleEvent(event);
                 return;
             }
-        switch (code) {
-            case REL_X: {
-                if (value == 0) break;
-                value *= sensitivity;
-                x1 += value;
-                if (x1 > width || x1 < 0) x1 -= value;
-                if (pointer_down) mInput.injectEvent(x1, y1, MOVE, pointerId);
-                break;
-            }
-            case REL_Y: {
-                if (value == 0) break;
-                value *= sensitivity;
-                y1 += value;
-                if (y1 > height || y1 < 0) y1 -= value;
-                if (pointer_down) mInput.injectEvent(x1, y1, MOVE, pointerId);
-                break;
-            }
-            case BTN_MOUSE:
-                pointer_down = value == 1;
-                if (mInput.getKeyEventHandler().ctrlKeyPressed && keymapConfig.ctrlDragMouseGesture) {
-                    pinchZoom = new MousePinchZoom(mInput, x1, y1);
-                    pinchZoom.handleEvent(code, value);
-                } else mInput.injectEvent(x1, y1, value, pointerId);
-                break;
-
-            case BTN_RIGHT:
-                handleRightClick(value);
-                break;
-
-            case BTN_MIDDLE:
-            case BTN_EXTRA:
-            case BTN_SIDE:
-                List<KeymapProfileKey> keys = mInput.getKeymapProfile().keys;
-                boolean shouldAim = true;
-                for (KeymapProfileKey key : keys) {
-                    if (codeDisplayName.equals(key.code)) {
-                        shouldAim = false;
-                        break;
-                    }
+        event.codeInt().ifPresent(code -> {
+            switch (code) {
+                case REL_X: {
+                    int value = event.action;
+                    if (value == 0) break;
+                    value *= sensitivity;
+                    x1 += value;
+                    if (x1 > width || x1 < 0) x1 -= value;
+                    if (pointer_down) mInput.injectEvent(x1, y1, MOVE, pointerId);
+                    break;
                 }
-                if (value == 1 && shouldAim) triggerMouseAim();
+                case REL_Y: {
+                    int value = event.action;
+                    if (value == 0) break;
+                    value *= sensitivity;
+                    y1 += value;
+                    if (y1 > height || y1 < 0) y1 -= value;
+                    if (pointer_down) mInput.injectEvent(x1, y1, MOVE, pointerId);
+                    break;
+                }
+                case BTN_MOUSE:
+                    pointer_down = event.action == 1;
+                    if (mInput.getKeyEventHandler().ctrlKeyPressed && keymapConfig.ctrlDragMouseGesture) {
+                        pinchZoom = new MousePinchZoom(mInput, x1, y1);
+                        pinchZoom.handleEvent(event);
+                    } else mInput.injectEvent(x1, y1, event.action, pointerId);
+                    break;
 
-            case REL_WHEEL:
-                if (mInput.getKeyEventHandler().ctrlKeyPressed && keymapConfig.ctrlMouseWheelZoom)
-                    scrollZoomHandler.onScrollEvent(value, x1, y1);
-                else
-                    mInput.injectScroll(x1, y1, value * scroll_speed_multiplier);
-                break;
-        }
-        if (code == REL_X) movePointerX();
-        if (code == REL_Y) movePointerY();
+                case BTN_RIGHT:
+                    handleRightClick(event.action);
+                    break;
+
+                case BTN_MIDDLE:
+                case BTN_EXTRA:
+                case BTN_SIDE:
+                    List<KeymapProfileKey> keys = mInput.getKeymapProfile().keys;
+                    boolean shouldAim = true;
+                    for (KeymapProfileKey key : keys) {
+                        if (event.code.equals(key.code)) {
+                            shouldAim = false;
+                            break;
+                        }
+                    }
+                    if (event.action == 1 && shouldAim) triggerMouseAim();
+
+                case REL_WHEEL:
+                    if (mInput.getKeyEventHandler().ctrlKeyPressed && keymapConfig.ctrlMouseWheelZoom)
+                        scrollZoomHandler.onScrollEvent(event.action, x1, y1);
+                    else
+                        mInput.injectScroll(x1, y1, event.action * scroll_speed_multiplier);
+                    break;
+            }
+            if (code == REL_X) movePointerX();
+            if (code == REL_Y) movePointerY();
+        });
     }
 
     public void evAbsY(int y) {

@@ -2,6 +2,9 @@ package xtr.keymapper.touchpointer;
 
 import androidx.annotation.Nullable;
 
+import java.util.Optional;
+
+import static xtr.keymapper.InputEventCodes.KNOWN_INPUT;
 import static xtr.keymapper.server.InputService.DOWN;
 import static xtr.keymapper.server.InputService.UP;
 
@@ -41,5 +44,13 @@ public class InputEvent {
                 return null;
         }
         return event;
+    }
+
+    public Optional<Integer> codeInt() {
+        try {
+            return Optional.ofNullable(KNOWN_INPUT.get(this.code));
+        } catch (NullPointerException exc) {
+            return Optional.empty();
+        }
     }
 }

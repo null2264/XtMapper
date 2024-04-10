@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import xtr.keymapper.server.IInputInterface;
+import xtr.keymapper.touchpointer.InputEvent;
 import xtr.keymapper.touchpointer.PointerId;
 
 public class MouseAimHandler {
@@ -61,32 +62,34 @@ public class MouseAimHandler {
                 service.getKeymapConfig().swipeDelayMs);
     }
 
-    public void handleEvent(int code, int value, OnButtonClickListener listener) {
-        switch (code) {
-            case REL_X:
-                currentX += value;
-                if (limitedBounds && (currentX > area.right || currentX < area.left))
-                    resetPointer();
-                service.injectEvent(currentX, currentY, MOVE, pointerIdAim);
-                break;
-            case REL_Y:
-                currentY += value;
-                if (limitedBounds && (currentY > area.bottom || currentY < area.top))
-                    resetPointer();
-                service.injectEvent(currentX, currentY, MOVE, pointerIdAim);
-                break;
+    public void handleEvent(InputEvent event, OnButtonClickListener listener) {
+        event.codeInt().ifPresent(code -> {
+            switch (code) {
+                case REL_X:
+                    currentX += event.action;
+                    if (limitedBounds && (currentX > area.right || currentX < area.left))
+                        resetPointer();
+                    service.injectEvent(currentX, currentY, MOVE, pointerIdAim);
+                    break;
+                case REL_Y:
+                    currentY += event.action;
+                    if (limitedBounds && (currentY > area.bottom || currentY < area.top))
+                        resetPointer();
+                    service.injectEvent(currentX, currentY, MOVE, pointerIdAim);
+                    break;
 
-            case BTN_MOUSE:
-                service.injectEvent(config.xleftClick, config.yleftClick, value, pointerIdMouse);
-                break;
+                case BTN_MOUSE:
+                    service.injectEvent(config.xleftClick, config.yleftClick, event.action, pointerIdMouse);
+                    break;
 
-            case BTN_MIDDLE:
-            case BTN_SIDE:
-            case BTN_EXTRA:
-            case BTN_RIGHT:
-                listener.onButtonClick(code, value);
-                break;
-        }
+                case BTN_MIDDLE:
+                case BTN_SIDE:
+                case BTN_EXTRA:
+                case BTN_RIGHT:
+                    listener.onButtonClick(event);
+                    break;
+            }
+        });
     }
 
     public void stop() {
@@ -94,6 +97,6 @@ public class MouseAimHandler {
     }
 
     public interface OnButtonClickListener {
-        void onButtonClick(int code, int value);
+        void onButtonClick(InputEvent event);
     }
 }

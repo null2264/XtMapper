@@ -8,6 +8,7 @@ import static xtr.keymapper.server.InputService.MOVE;
 import static xtr.keymapper.server.InputService.UP;
 
 import xtr.keymapper.server.IInputInterface;
+import xtr.keymapper.touchpointer.InputEvent;
 import xtr.keymapper.touchpointer.PointerId;
 
 public class MousePinchZoom {
@@ -50,11 +51,15 @@ public class MousePinchZoom {
         initPointers();
     }
 
-    public boolean handleEvent(int code, int value) {
+    public boolean handleEvent(InputEvent event) {
+        Integer code;
+        if (event.codeInt().isPresent()) code = event.codeInt().get();
+        else return false;
+
         switch (code) {
             case REL_X:
-                currentX1 += value;
-                currentX2 -= value;
+                currentX1 += event.action;
+                currentX2 -= event.action;
                 // If it passed through the center in opposite direction
                 if (centerX > currentX1) moveAwayPointers();
 
@@ -62,8 +67,8 @@ public class MousePinchZoom {
                 service.injectEvent(currentX2, currentY2, MOVE, pointerId2);
                 break;
             case REL_Y:
-                currentY1 += value;
-                currentY2 -= value;
+                currentY1 += event.action;
+                currentY2 -= event.action;
                 if (centerY > currentY1) moveAwayPointers();
 
                 service.injectEvent(currentX1, currentY1, MOVE, pointerId1);
@@ -71,9 +76,9 @@ public class MousePinchZoom {
                 break;
 
             case BTN_MOUSE:
-                service.injectEvent(currentX1, currentY1, value, pointerId1);
-                service.injectEvent(currentX2, currentY2, value, pointerId2);
-                if (value == UP) return false;
+                service.injectEvent(currentX1, currentY1, event.action, pointerId1);
+                service.injectEvent(currentX2, currentY2, event.action, pointerId2);
+                if (event.action == UP) return false;
                 break;
         }
         return true;
