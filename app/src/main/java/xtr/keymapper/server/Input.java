@@ -11,6 +11,7 @@ import com.genymobile.scrcpy.Point;
 import com.genymobile.scrcpy.Pointer;
 import com.genymobile.scrcpy.PointersState;
 
+import java.lang.IndexOutOfBoundsException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -59,7 +60,12 @@ public class Input {
         pointer.setPressure(pressure);
         pointer.setUp(action == MotionEvent.ACTION_UP);
 
-        pointerCount = pointersState.update(pointerProperties, pointerCoords);
+        try {
+            pointerCount = pointersState.update(pointerProperties, pointerCoords);
+        } catch (IndexOutOfBoundsException e) {
+            e.printStackTrace(System.out);
+            return;
+        }
 
         if (pointerCount == 1) {
             if (action == MotionEvent.ACTION_DOWN) {
