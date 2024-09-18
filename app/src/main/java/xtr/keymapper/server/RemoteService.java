@@ -1,5 +1,7 @@
 package xtr.keymapper.server;
 
+import android.app.ApplicationErrorReport;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -25,6 +27,7 @@ import xtr.keymapper.IRemoteServiceCallback;
 import xtr.keymapper.OnKeyEventListener;
 import xtr.keymapper.R;
 import xtr.keymapper.Utils;
+import xtr.keymapper.activity.MainActivity;
 import xtr.keymapper.databinding.CursorBinding;
 import xtr.keymapper.keymap.KeymapConfig;
 import xtr.keymapper.keymap.KeymapProfile;
@@ -38,33 +41,63 @@ public class RemoteService extends IRemoteService.Stub {
     private ActivityObserverService activityObserverService;
     String nativeLibraryDir = System.getProperty("java.library.path");
     private View cursorView;
-    private Context context = null;
     private int TYPE_SECURE_SYSTEM_OVERLAY;
     Handler mHandler = new Handler(Looper.getMainLooper());
-
-    public RemoteService() {
-
-    }
+    private final WindowManager windowManager;
+    final Context context;
+    public static final String TAG = "xtmapper-server";
 
     /* For Shizuku UserService */
     public RemoteService(Context context) {
         loadLibraries();
-        init(context);
+        this.context = context;
+
+        windowManager = context.getSystemService(WindowManager.class);
+        LayoutInflater layoutInflater = context.getSystemService(LayoutInflater.class);
+        context.setTheme(R.style.Theme_XtMapper);
+        cursorView = CursorBinding.inflate(layoutInflater).getRoot();
+        try {
+            prepareCursorOverlayWindow();
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage(), e);
+        }
+        init();
     }
 
-    public RemoteService init(Context context) {
+
+    public void init() {
         PackageManager pm = context.getPackageManager();
         String packageName = context.getPackageName();
         try {
             ApplicationInfo ai = pm.getApplicationInfo(packageName, 0);
             nativeLibraryDir = ai.nativeLibraryDir;
-            start_getevent();
+            if(!isWaylandClient) start_getevent();
         } catch (PackageManager.NameNotFoundException e) {
+            Log.e(TAG, e.getMessage(), e);
             throw new RuntimeException(e);
         }
 
-        this.context = context;
-        return this;
+        Looper.getMainLooper().getThread().setUncaughtExceptionHandler((t, e) -> {
+            try {
+                ApplicationErrorReport.CrashInfo crashInfo = new ApplicationErrorReport.CrashInfo(e);
+
+                new ProcessBuilder("am", "start", "-a", "android.intent.action.MAIN", "-n",
+                        new ComponentName(context, MainActivity.class).flattenToString(),
+                        "--es", "data",
+                        crashInfo.exceptionMessage + "\n" +
+                                crashInfo.exceptionClassName + "\n" +
+                                crashInfo.stackTrace + "\n" +
+                                crashInfo.throwClassName + "\n" +
+                                crashInfo.throwFileName + "\n" +
+                                crashInfo.throwLineNumber + "\n" +
+                                crashInfo.throwMethodName).inheritIO().start();
+
+            } catch (Exception ex) {
+                Log.e(TAG, ex.getMessage(), ex);
+                Log.e(TAG, e.getMessage(), e);
+            }
+            System.exit(1);
+        });
     }
 
     @Override
@@ -74,35 +107,35 @@ public class RemoteService extends IRemoteService.Stub {
     }
 
     private void addCursorView() {
-        WindowManager windowManager = context.getSystemService(WindowManager.class);
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
-                TYPE_SECURE_SYSTEM_OVERLAY,
-                // Don't let the cursor grab the input focus
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE |
-                        WindowManager.LayoutParams.FLAG_FULLSCREEN |
-                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                        WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                // Make the underlying application window visible
-                // through the cursor
-                PixelFormat.TRANSLUCENT);
-
-        mHandler.post(() -> windowManager.addView(cursorView, params));
-    }
-
-    private void removeCursorView() {
-        WindowManager windowManager = context.getSystemService(WindowManager.class);
-        mHandler.post(() -> windowManager.removeView(cursorView));
+         if (cursorView != null) mHandler.post(() -> {
+            if(cursorView.isAttachedToWindow()) {
+                cursorView.setVisibility(View.VISIBLE);
+            } else {
+                WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                        WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
+                        TYPE_SECURE_SYSTEM_OVERLAY,
+                        // Don't let the cursor grab the input focus
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE |
+                                WindowManager.LayoutParams.FLAG_FULLSCREEN |
+                                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+                        // Make the underlying application window visible
+                        // through the cursor
+                        PixelFormat.TRANSLUCENT);
+                try {
+                    windowManager.addView(cursorView, params);
+                } catch (IllegalStateException e) {
+                    Log.e(TAG, e.getMessage(), e);
+                    cursorView = null;
+                }
+            }
+        });
     }
 
     public void prepareCursorOverlayWindow() throws NoSuchMethodException, NoSuchFieldException, IllegalAccessException, InvocationTargetException {
-        LayoutInflater layoutInflater = context.getSystemService(LayoutInflater.class);
-        context.setTheme(R.style.Theme_XtMapper);
-        cursorView = CursorBinding.inflate(layoutInflater).getRoot();
         TYPE_SECURE_SYSTEM_OVERLAY = WindowManager.LayoutParams.class.getField("TYPE_SECURE_SYSTEM_OVERLAY").getInt(null);
         Binder sWindowToken = new Binder();
-        WindowManager windowManager = context.getSystemService(WindowManager.class);
         Method setDefaultTokenMethod = windowManager.getClass().getMethod("setDefaultToken", IBinder.class);
         setDefaultTokenMethod.invoke(windowManager, sWindowToken);
     }
@@ -128,12 +161,12 @@ public class RemoteService extends IRemoteService.Stub {
                     String[] data = line.split(":"); // split a string like "/dev/input/event2: EV_REL REL_X ffffffff"
                     if (addNewDevices(data)) {
                         if (inputService != null) {
+                            if (isWaylandClient && data[0].contains("wl_pointer"))
+                                inputService.sendWaylandMouseEvent(data[1]);
+
                             KeyEventHandler k = inputService.getKeyEventHandler();
                             if (!inputService.stopEvents) {
-                                if (isWaylandClient && data[0].contains("wl_pointer"))
-                                    inputService.sendWaylandMouseEvent(data[1]);
-                                else
-                                    k.handleEvent(data[1]);
+                                k.handleEvent(data[1]);
                             } else {
                                 k.handleKeyboardShortcutEvent(data[1]);
                             }
@@ -142,11 +175,15 @@ public class RemoteService extends IRemoteService.Stub {
                     }
                 }
             } catch (Exception e){
-                e.printStackTrace(System.out);
+                Log.e(TAG, e.getMessage(), e);
             }
         }).start();
     }
 
+    /**
+     * @param data split output of getevent command
+     * @return true if output is valid for processing
+     */
     private boolean addNewDevices(String[] data) {
         String[] input_event;
         if (data.length != 2) return false;
@@ -163,19 +200,22 @@ public class RemoteService extends IRemoteService.Stub {
         return true;
     }
 
+    /**
+     * Called by client to start the remote server.
+     *
+     * @param profile  The keymap profile
+     * @param keymapConfig Some configurations
+     * @param cb  The instance used to callback to remote service
+     * @param screenHeight Screen resolution (vertical)
+     * @param screenWidth  Screen resolution (horizontal)
+     */
     @Override
     public void startServer(KeymapProfile profile, KeymapConfig keymapConfig, IRemoteServiceCallback cb, int screenWidth, int screenHeight) throws RemoteException {
+
         if (inputService != null) stopServer();
-        cb.asBinder().linkToDeath(this::stopServer, 0);
-        if (!keymapConfig.pointerMode.equals(KeymapConfig.POINTER_SYSTEM)) {
-            try {
-                prepareCursorOverlayWindow();
-            } catch (Exception e) {
-                Log.e("overlayWindow", e.getMessage(), e);
-            }
-            if (cursorView != null) addCursorView();
-        } else {
-            cursorView = null;
+        if (cb != null) cb.asBinder().linkToDeath(this::stopServer, 0);
+        if (keymapConfig.pointerMode != KeymapConfig.POINTER_SYSTEM) {
+            addCursorView();
         }
         inputService = new InputService(profile, keymapConfig, cb, screenWidth, screenHeight, cursorView, isWaylandClient);
         if (!isWaylandClient) {
@@ -188,13 +228,13 @@ public class RemoteService extends IRemoteService.Stub {
     public void stopServer() {
         if (inputService != null && !isWaylandClient) {
             inputService.stopEvents = true;
+            inputService.hideCursor();
             inputService.stop();
             inputService.stopMouse();
             inputService.stopTouchpad();
             inputService.destroyUinputDev();
             inputService = null;
         }
-        if (cursorView != null) removeCursorView();
     }
 
     private final DeathRecipient mDeathRecipient = () -> mOnKeyEventListener = null;
@@ -225,6 +265,9 @@ public class RemoteService extends IRemoteService.Stub {
         activityObserverService = null;
     }
 
+    /**
+     * Used to temporary stop the keymapping.
+     */
     @Override
     public void pauseMouse(){
         if (inputService != null)
@@ -234,9 +277,13 @@ public class RemoteService extends IRemoteService.Stub {
     @Override
     public void resumeMouse(){
         if (inputService != null)
-            if (inputService.stopEvents) inputService.pauseResumeKeymap();
+            if (inputService.stopEvents)
+                inputService.pauseResumeKeymap();
     }
 
+    /**
+     * Used to refresh by requesting new keymap from the user app
+     */
     @Override
     public void reloadKeymap() {
         if (inputService != null) inputService.reloadKeymap();

@@ -23,10 +23,10 @@ public class InputService implements IInputInterface {
     public static final int UP = 0, DOWN = 1, MOVE = 2;
     private final IRemoteServiceCallback mCallback;
     boolean stopEvents = false;
-    boolean pointerUp = false;
     private final boolean isWaylandClient;
-    private final String touchpadInputMode;
+    private final int touchpadInputMode;
     private final View cursorView;
+    private final int currentPointerMode;
 
     private final Handler mHandler = new Handler(Looper.getMainLooper());
 
@@ -36,18 +36,20 @@ public class InputService implements IInputInterface {
         this.mCallback = mCallback;
         this.isWaylandClient = isWaylandClient;
         this.cursorView = cursorView;
-
-        if (cursorView == null || !keymapConfig.pointerMode.equals(KeymapConfig.POINTER_OVERLAY)) {
+        this.currentPointerMode = keymapConfig.pointerMode;
+        if (currentPointerMode != KeymapConfig.POINTER_OVERLAY) {
             initMouseCursor(screenWidth, screenHeight);
             // Reduce visibility of system pointer
             cursorSetX(0);
             cursorSetY(0);
+        } else if (cursorView == null) {
+            showCursor();
         }
 
         this.touchpadInputMode = keymapConfig.touchpadInputMode;
-        if (touchpadInputMode.equals(KeymapConfig.TOUCHPAD_DIRECT))
+        if (touchpadInputMode == KeymapConfig.TOUCHPAD_DIRECT)
             startTouchpadDirect();
-        else if (touchpadInputMode.equals(KeymapConfig.TOUCHPAD_RELATIVE))
+        else if (touchpadInputMode == KeymapConfig.TOUCHPAD_RELATIVE)
             startTouchpadRelative();
 
         mouseEventHandler = new MouseEventHandler(this);
@@ -60,11 +62,9 @@ public class InputService implements IInputInterface {
     public void injectEvent(float x, float y, int action, int pointerId) {
         switch (action) {
             case UP:
-		pointerUp = true;
                 input.injectTouch(MotionEvent.ACTION_UP, pointerId, 0.0f, x, y);
                 break;
             case DOWN:
-		pointerUp = false;
                 input.injectTouch(MotionEvent.ACTION_DOWN, pointerId, 1.0f, x, y);
                 break;
             case MOVE:
@@ -73,14 +73,20 @@ public class InputService implements IInputInterface {
         }
     }
 
+    @Override
+    public void injectHoverEvent(float x, float y, int pointerId) {
+        if(input.noPointersDown() && currentPointerMode == KeymapConfig.POINTER_OVERLAY)
+            input.injectTouch(MotionEvent.ACTION_HOVER_MOVE, pointerId, 1.0f, x, y);
+    }
+
     public void injectScroll(float x, float y, int value) {
         input.onScrollEvent(x, y, value);
     }
 
     @Override
     public void pauseResumeKeymap() {
+        stopEvents = !stopEvents;
         if (!isWaylandClient) {
-            stopEvents = !stopEvents;
             setMouseLock(!stopEvents);
         }
     }
@@ -106,18 +112,60 @@ public class InputService implements IInputInterface {
         return mCallback;
     }
 
-    public void moveCursorX(float x) {
-        if(cursorView != null) mHandler.post(() -> cursorView.setX(x));
-        // To avoid conflict with touch input when moving virtual pointer
-        if (input.pointerCount < 1) cursorSetX((int) x);
-	else if (input.pointerCount == 1 && pointerUp) cursorSetX((int) x);
+    public void moveCursorX(int x) {
+        if (cursorView != null) {
+            mHandler.post(() -> cursorView.setX(x));
+        } else {
+            try {
+                mCallback.setCursorX(x);
+            } catch (RemoteException ignored) {
+            }
+        }
+        if (currentPointerMode != KeymapConfig.POINTER_OVERLAY) {
+            // To avoid conflict with touch input when moving virtual pointer
+            if (input.noPointersDown()) cursorSetX(x);
+        }
     }
 
-    public void moveCursorY(float y) {
-        if(cursorView != null) mHandler.post(() -> cursorView.setY(y));
-        // To avoid conflict with touch input when moving virtual pointer
-        if (input.pointerCount < 1) cursorSetY((int) y);
-	else if (input.pointerCount == 1 && pointerUp) cursorSetY((int) y);
+    public void moveCursorY(int y) {
+        if (cursorView != null) {
+            mHandler.post(() -> cursorView.setY(y));
+        } else {
+            try {
+                mCallback.setCursorY(y);
+            } catch (RemoteException ignored) {
+            }
+        }
+        if (currentPointerMode != KeymapConfig.POINTER_OVERLAY) {
+            // To avoid conflict with touch input when moving virtual pointer
+            if (input.noPointersDown()) cursorSetY(y);
+        }
+    }
+
+    @Override
+    public void hideCursor() {
+        if (cursorView != null) {
+            mHandler.post(() -> cursorView.setVisibility(View.GONE));
+        } else {
+            try {
+                mCallback.disablePointer();
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public void showCursor() {
+        if (cursorView != null) {
+            mHandler.post(() -> cursorView.setVisibility(View.VISIBLE));
+        } else {
+            try {
+                mCallback.enablePointer();
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public void reloadKeymap() {
@@ -128,7 +176,7 @@ public class InputService implements IInputInterface {
             keyEventHandler.init();
             mouseEventHandler.init();
         } catch (Exception e) {
-            Log.e("reload keymap", e.getMessage(), e);
+            Log.e(RemoteService.TAG, e.getMessage(), e);
         }
     }
 
@@ -138,9 +186,9 @@ public class InputService implements IInputInterface {
     }
 
     public void stopTouchpad() {
-        if (touchpadInputMode.equals(KeymapConfig.TOUCHPAD_DIRECT))
+        if (touchpadInputMode == KeymapConfig.TOUCHPAD_DIRECT)
             stopTouchpadDirect();
-        else if (touchpadInputMode.equals(KeymapConfig.TOUCHPAD_RELATIVE))
+        else if (touchpadInputMode == KeymapConfig.TOUCHPAD_RELATIVE)
             stopTouchpadRelative();
     }
 

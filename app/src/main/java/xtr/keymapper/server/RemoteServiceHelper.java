@@ -13,8 +13,6 @@ import android.util.Log;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ipc.RootService;
 
-import java.io.IOException;
-
 import rikka.shizuku.Shizuku;
 import xtr.keymapper.BuildConfig;
 import xtr.keymapper.IRemoteService;
@@ -30,7 +28,7 @@ public class RemoteServiceHelper {
             try {
                 service.pauseMouse();
             } catch (RemoteException e) {
-                Log.i("RemoteService", e.toString());
+                Log.i(RemoteService.TAG, e.getMessage(), e);
             }
         });
     }
@@ -40,7 +38,7 @@ public class RemoteServiceHelper {
             try {
                 service.resumeMouse();
             } catch (RemoteException e) {
-                Log.i("RemoteService", e.toString());
+                Log.i(RemoteService.TAG, e.getMessage(), e);
             }
         });
     }
@@ -50,7 +48,7 @@ public class RemoteServiceHelper {
             try {
                 service.reloadKeymap();
             } catch (RemoteException e) {
-                Log.e("RemoteService", e.getMessage(), e);
+                Log.i(RemoteService.TAG, e.getMessage(), e);
             }
         });
     }
@@ -74,22 +72,22 @@ public class RemoteServiceHelper {
         }
     }
 
-    public static void getInstance(){
+    private static void getInstance(){
         if (service == null) {
             // Try tcpip connection first
-            try {
+            /*try {
                 service = new RemoteServiceSocketClient();
             } catch (IOException e) {
-                // Log.e(e.toString(), e.getMessage(), e);
+                Log.e(e.toString(), e.getMessage(), e);
                 RemoteServiceSocketClient.socket = null;
-            }
-            if (RemoteServiceSocketClient.socket == null) {
+            }*/
+            //if (RemoteServiceSocketClient.socket == null) {
                 service = IRemoteService.Stub.asInterface(ServiceManager.getService("xtmapper"));
                 if (service != null) try {
                     service.asBinder().linkToDeath(() -> service = null, 0);
                 } catch (RemoteException ignored) {
                 }
-            }
+            //}
         }
     }
 
@@ -105,17 +103,18 @@ public class RemoteServiceHelper {
 
     public static void getInstance(Context context, RootRemoteServiceCallback callback){
         getInstance();
-        if (service != null) callback.onConnection(service);
-        else {
+        if (service != null) {
+            if (callback != null) callback.onConnection(service);
+        } else {
             RemoteServiceConnection connection = new RemoteServiceConnection(callback);
             if (useShizuku) {
                 if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED)
-                    bindShizukuService(context, connection);
+                    if (callback != null) bindShizukuService(context, connection);
             } else {
                 Boolean hasRootAccess = Shell.isAppGrantedRoot();
                 if (hasRootAccess != null) isRootService = hasRootAccess;
                 Intent intent = new Intent(context, RootRemoteService.class);
-                RootService.bind(intent, connection);
+                if (callback != null) RootService.bind(intent, connection);
             }
         }
     }

@@ -4,6 +4,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 
@@ -19,7 +20,6 @@ public class Input {
 
     static Method injectInputEventMethod;
     static Object inputManager;
-    static int inputSource = InputDevice.SOURCE_TOUCHSCREEN;
 
     private final PointersState pointersState = new PointersState();
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
@@ -27,7 +27,7 @@ public class Input {
     private long lastTouchDown;
     private final SmoothScroll scrollHandler = new SmoothScroll();
     private Handler mHandler;
-    public int pointerCount;
+    private int pointerCount = 0;
 
     private void initPointers() {
         for (int i = 0; i < PointersState.MAX_POINTERS; ++i) {
@@ -43,6 +43,16 @@ public class Input {
         }
     }
 
+    public boolean noPointersDown() {
+        if (pointerCount > 0) {
+            pointerCount = pointersState.update(pointerProperties, pointerCoords);
+            for (int i = 0; i < pointerCount; i++) {
+                if (!pointersState.get(i).isUp()) return false;
+            }
+        }
+        return true;
+    }
+
     public Input() {
         initPointers();
     }
@@ -53,12 +63,15 @@ public class Input {
 
         int pointerIndex = pointersState.getPointerIndex(pointerId);
         if (pointerIndex == -1) {
-            System.out.println("Too many pointers for touch event");
+            Log.e(RemoteService.TAG, "Too many pointers for touch event");
         }
         Pointer pointer = pointersState.get(pointerIndex);
         pointer.setPoint(point);
         pointer.setPressure(pressure);
-        pointer.setUp(action == MotionEvent.ACTION_UP);
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_HOVER_MOVE) pointer.setUp(true);        
+        else if (action == MotionEvent.ACTION_DOWN) pointer.setUp(false);
+
+        int source = InputDevice.SOURCE_TOUCHSCREEN;
 
         try {
             pointerCount = pointersState.update(pointerProperties, pointerCoords);
@@ -84,11 +97,11 @@ public class Input {
         MotionEvent motionEvent = MotionEvent.obtain(lastTouchDown, now, action, pointerCount,
                 pointerProperties, pointerCoords,
                 0, 0, 1f, 1f,
-                0, 0, inputSource, 0);
+                0, 0, source, 0);
         try {
             injectInputEventMethod.invoke(inputManager, motionEvent, 0);
         } catch (IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace(System.out);
+            Log.e(RemoteService.TAG, e.getMessage(), e);
         }
     }
 
@@ -116,7 +129,7 @@ public class Input {
         try {
             injectInputEventMethod.invoke(inputManager, motionEvent, 0);
         } catch (IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace(System.out);
+            Log.e(RemoteService.TAG, e.getMessage(), e);
         }
     }
 
@@ -186,7 +199,7 @@ public class Input {
 
                 injectScroll(event, ivalue);
             } catch (InterruptedException e) {
-                e.printStackTrace(System.out);
+                Log.e(RemoteService.TAG, e.getMessage(), e);
             }
         }
     }
@@ -215,7 +228,7 @@ public class Input {
              injectInputEventMethod = inputManagerClass.getMethod(methodName, android.view.InputEvent.class, Integer.TYPE);
 
          } catch (Exception e) {
-            e.printStackTrace(System.out);
+             Log.e(RemoteService.TAG, e.getMessage(), e);
          }
     }
 }

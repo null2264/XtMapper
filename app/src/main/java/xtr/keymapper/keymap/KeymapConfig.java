@@ -16,29 +16,35 @@ public class KeymapConfig implements Parcelable {
     public boolean ctrlMouseWheelZoom, ctrlDragMouseGesture, rightClickMouseAim, keyGraveMouseAim;
     public boolean disableAutoProfiling, useShizuku, editorOverlay;
 
-    public int pauseResumeShortcutKey, launchEditorShortcutKey, switchProfileShortcutKey;
+    public int pauseResumeShortcutKey = 25; // KEY_P
+    public int launchEditorShortcutKey = 14; // KEY_E
+    public int switchProfileShortcutKey = 28; // KEY_S
     public int swipeDelayMs;
     public String pauseResumeShortcutKeyModifier, launchEditorShortcutKeyModifier, switchProfileShortcutKeyModifier;
-    public String pointerMode;
+    public int pointerMode;
 
     public static final String KEY_CTRL = "Ctrl", KEY_ALT = "Alt";
-    public static final String TOGGLE = "Toggle", HOLD = "Hold";
-    public static final String TOUCHPAD_DIRECT = "Direct";
-    public static final String TOUCHPAD_RELATIVE = "Relative";
-    public static final String TOUCHPAD_DISABLED = "Disabled";
+    public static final int TOUCHPAD_DIRECT = 3;
+    public static final int TOUCHPAD_RELATIVE = 4;
+    public static final int TOUCHPAD_DISABLED = 5;
 
-    public static final String POINTER_SYSTEM = "System";
-    public static final String POINTER_OVERLAY = "Overlay";
-    public static final String POINTER_COMBINED = "Combined";
+    public static final int POINTER_SYSTEM = 6;
+    public static final int POINTER_OVERLAY = 7;
+    public static final int POINTER_COMBINED = 8;
 
     public int mouseAimShortcutKey;
     public boolean mouseAimToggle;
-    public String touchpadInputMode = TOUCHPAD_DISABLED;
+    public int touchpadInputMode = TOUCHPAD_DISABLED;
 
     public KeymapConfig(Context context) {
         if (context != null) {
             sharedPref = context.getSharedPreferences("settings", MODE_PRIVATE);
-            loadSharedPrefs();
+            try {
+                loadSharedPrefs();
+            } catch (ClassCastException e) {
+                sharedPref.edit().clear().apply();
+                loadSharedPrefs();
+            }
         }
     }
 
@@ -72,10 +78,10 @@ public class KeymapConfig implements Parcelable {
         mouseAimShortcutKey = in.readInt();
         mouseAimToggle = in.readByte() != 0;
         disableAutoProfiling = in.readByte() != 0;
-        touchpadInputMode = in.readString();
+        touchpadInputMode = in.readInt();
         useShizuku = in.readByte() != 0;
         editorOverlay = in.readByte() != 0;
-        pointerMode = in.readString();
+        pointerMode = in.readInt();
     }
 
     public static final Creator<KeymapConfig> CREATOR = new Creator<>() {
@@ -90,7 +96,7 @@ public class KeymapConfig implements Parcelable {
         }
     };
 
-    private void loadSharedPrefs() {
+    private void loadSharedPrefs() throws ClassCastException {
         mouseSensitivity = sharedPref.getFloat("mouse_sensitivity_multiplier", 1);
         scrollSpeed = sharedPref.getFloat("scroll_speed_multiplier", 1);
         ctrlMouseWheelZoom = sharedPref.getBoolean("ctrl_mouse_wheel_zoom", false);
@@ -100,9 +106,9 @@ public class KeymapConfig implements Parcelable {
         useShizuku = sharedPref.getBoolean("use_shizuku", false);
         editorOverlay = sharedPref.getBoolean("editor_overlay", false);
 
-        launchEditorShortcutKey = sharedPref.getInt("launch_editor_shortcut", -1);
-        pauseResumeShortcutKey = sharedPref.getInt("pause_resume_shortcut", -1);
-        switchProfileShortcutKey = sharedPref.getInt("switch_profile_shortcut", -1);
+        launchEditorShortcutKey = sharedPref.getInt("launch_editor_shortcut", launchEditorShortcutKey);
+        pauseResumeShortcutKey = sharedPref.getInt("pause_resume_shortcut", pauseResumeShortcutKey);
+        switchProfileShortcutKey = sharedPref.getInt("switch_profile_shortcut", switchProfileShortcutKey);
         mouseAimShortcutKey = sharedPref.getInt("mouse_aim_shortcut", -1);
 
         launchEditorShortcutKeyModifier = sharedPref.getString("launch_editor_shortcut_modifier", KEY_CTRL);
@@ -115,8 +121,8 @@ public class KeymapConfig implements Parcelable {
         swipeDelayMs = sharedPref.getInt("swipe_delay_ms", 10);
         dpadRadiusMultiplier = sharedPref.getFloat("dpad_radius", 1f);
 
-        touchpadInputMode = sharedPref.getString("touchpad_input_mode", TOUCHPAD_DISABLED);
-        pointerMode = sharedPref.getString("pointer_mode", POINTER_COMBINED);
+        touchpadInputMode = sharedPref.getInt("touchpad_input_mode", TOUCHPAD_DISABLED);
+        pointerMode = sharedPref.getInt("pointer_mode", POINTER_OVERLAY);
     }
 
     public void applySharedPrefs() {
@@ -138,9 +144,9 @@ public class KeymapConfig implements Parcelable {
                 .putString("pause_resume_shortcut_modifier", pauseResumeShortcutKeyModifier)
                 .putString("launch_editor_shortcut_modifier", launchEditorShortcutKeyModifier)
                 .putString("switch_profile_shortcut_modifier", switchProfileShortcutKeyModifier)
-                .putString("touchpad_input_mode", touchpadInputMode)
+                .putInt("touchpad_input_mode", touchpadInputMode)
                 .putInt("swipe_delay_ms", swipeDelayMs)
-                .putString("pointer_mode", pointerMode)
+                .putInt("pointer_mode", pointerMode)
                 .apply();
     }
 
@@ -183,9 +189,9 @@ public class KeymapConfig implements Parcelable {
         dest.writeInt(mouseAimShortcutKey);
         dest.writeByte((byte) (mouseAimToggle ? 1 : 0));
         dest.writeByte((byte) (disableAutoProfiling ? 1 : 0));
-        dest.writeString(touchpadInputMode);
+        dest.writeInt(touchpadInputMode);
         dest.writeByte((byte) (useShizuku ? 1 : 0));
         dest.writeByte((byte) (editorOverlay ? 1 : 0));
-        dest.writeString(pointerMode);
+        dest.writeInt(pointerMode);
     }
 }

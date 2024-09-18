@@ -49,7 +49,7 @@
     <string name="swipe_delay_ms">Swipe delay %d milliseconds</string>
     <string name="profile_name">Profile Name</string>
     <string name="root_not_found_title">Root access not found</string>
-    <string name="root_not_found_message">Root access is required for the keymapper to function. \n Please grant superuser to XtMapper from KernelSU manager app:</string>
+    <string name="root_not_found_message">Root access is required for the keymapper to function. \n Please grant superuser to XtMapper from KernelSU manager app</string>
     <string name="root_no_privileges_title">Service failed to start as root</string>
     <string name="root_no_privileges_message">
         Unable to obtain privileges. Do you want to exit the application?\n
@@ -62,4 +62,46 @@
     <string name="pointer">Pointer Mode</string>
     <string name="open_editor_as_overlay">Open editor as overlay</string>
 
+    <!--  Keymap editor  -->
+    <string name="d_pad">D-Pad</string>
+    <string name="crosshair">CrossHair</string>
+    <string name="left_click">Left Click</string>
+    <string name="swipe_key">Swipe Key</string>
+    <string name="add_key">Add Key</string>
+    <string name="save">Save</string>
+
+    <!--  Mouse Aim  -->
+    <string name="toggle">Toggle</string>
+    <string name="hold">Hold</string>
+
+    <!--  Pointer Mode  -->
+    <string name="combined">Combined</string>
+    <string name="overlay">Overlay</string>
+    <string name="system">System</string>
+
+    <!--  Touchpad  -->
+    <string name="relative">Relative</string>
+    <string name="disabled">Disabled</string>
+    <string name="direct">Direct</string>
+
+    <string name="shizuku_not_authorized_title">Shizuku not authorized</string>
+    <string name="shizuku_not_authorized_message">Authorize XtMapper from Shizuku manager app to continue</string>
+    <string name="activate_with">Activate with</string>
+    <string name="grave_key">~ key</string>
+    <string name="x_sensitivity">X-Sensitivity</string>
+    <string name="y_sensitivity">Y-Sensitivity</string>
+    <string name="apply_non_linear_scaling">Apply non linear scaling</string>
+    <string name="import_export">Import/Export</string>
+    <string name="import_profiles">Import profiles</string>
+    <string name="import_previously_exported_profiles_from_storage">Import previously exported profiles from storage.</string>
+    <string name="export_profiles">Export profiles</string>
+    <string name="export_profiles_to_disk_for_restoring_later_or_sharing">Export profiles to disk for restoring later or sharing.</string>
+    <string name="export_selected">Export selected</string>
+    <string name="select_all">Select all</string>
+    <string name="import_button">Import</string>
+    <string name="rename">Rename</string>
+    <string name="delete">Delete</string>
+    <string name="enabled">Enabled</string>
+    <string name="no_profile_selected">No profile selected</string>
+    <string name="select_profile_from_below">Tap on a profile from the list below to select it</string>
 </resources>

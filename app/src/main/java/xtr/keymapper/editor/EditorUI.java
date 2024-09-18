@@ -16,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -23,7 +24,9 @@ import androidx.appcompat.app.AlertDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import xtr.keymapper.InputEventCodes;
 import xtr.keymapper.OnKeyEventListener;
@@ -32,17 +35,17 @@ import xtr.keymapper.databinding.CrosshairBinding;
 import xtr.keymapper.databinding.DpadArrowsBinding;
 import xtr.keymapper.databinding.DpadBinding;
 import xtr.keymapper.databinding.KeymapEditorBinding;
+import xtr.keymapper.databinding.MouseAimConfigBinding;
 import xtr.keymapper.databinding.ResizableBinding;
 import xtr.keymapper.dpad.Dpad;
 import xtr.keymapper.dpad.DpadKeyCodes;
 import xtr.keymapper.floatingkeys.MovableFloatingActionKey;
 import xtr.keymapper.floatingkeys.MovableFrameLayout;
+import xtr.keymapper.keymap.KeymapConfig;
 import xtr.keymapper.keymap.KeymapProfile;
 import xtr.keymapper.keymap.KeymapProfileKey;
 import xtr.keymapper.keymap.KeymapProfiles;
 import xtr.keymapper.mouse.MouseAimConfig;
-import xtr.keymapper.mouse.MouseAimSettings;
-import xtr.keymapper.server.RemoteServiceHelper;
 import xtr.keymapper.swipekey.SwipeKey;
 import xtr.keymapper.swipekey.SwipeKeyView;
 import xtr.keymapper.touchpointer.InputEvent;
@@ -54,7 +57,8 @@ public class EditorUI extends OnKeyEventListener.Stub {
 
     private KeyInFocus keyInFocus;
     // Keyboard keys
-    private final List<MovableFloatingActionKey> keyList = new ArrayList<>();
+    private final Map<FrameLayout, MovableFloatingActionKey> floatingKeysMap = new HashMap<>();
+    private final Map<FrameLayout, MovableFloatingActionKey> swipeKeyViewMap = new HashMap<>();
     private final List<SwipeKeyView> swipeKeyList = new ArrayList<>();
     private MovableFloatingActionKey leftClick, rightClick;
 
@@ -164,7 +168,12 @@ public class EditorUI extends OnKeyEventListener.Stub {
         profile = new KeymapProfiles(context).getProfile(profileName);
         // Add Keyboard keys as Views
         profile.keys.forEach(this::addKey);
-        profile.swipeKeys.forEach(swipeKey -> swipeKeyList.add(new SwipeKeyView(mainView, swipeKey, swipeKeyList::remove, this::onClick)));
+        profile.swipeKeys.forEach(swipeKey -> {
+            SwipeKeyView swipeKeyView = new SwipeKeyView(mainView, swipeKey, this::removeSwipeKey, this::onSwipeKeyClick);
+            swipeKeyList.add(swipeKeyView);
+            swipeKeyViewMap.put(swipeKeyView.button1.frameView, swipeKeyView.button1);
+            swipeKeyViewMap.put(swipeKeyView.button2.frameView, swipeKeyView.button2);
+        });
 
 
         for (int i = 0; i < profile.dpadArray.length; i++)
@@ -175,6 +184,12 @@ public class EditorUI extends OnKeyEventListener.Stub {
 
         if (profile.mouseAimConfig != null) addCrosshair(profile.mouseAimConfig.xCenter, profile.mouseAimConfig.yCenter);
         if (profile.rightClick != null) addRightClick(profile.rightClick.x, profile.rightClick.y);
+    }
+
+    private void removeSwipeKey(SwipeKeyView swipeKeyView) {
+        swipeKeyViewMap.remove(swipeKeyView.button1.frameView, swipeKeyView.button1);
+        swipeKeyViewMap.remove(swipeKeyView.button2.frameView, swipeKeyView.button2);
+        swipeKeyList.remove(swipeKeyView);
     }
 
     private void saveKeymap() {
@@ -203,8 +218,7 @@ public class EditorUI extends OnKeyEventListener.Stub {
         }
         
         // Keyboard keys
-        keyList.stream().map(MovableFloatingActionKey::getData).forEach(linesToWrite::add);
-
+        floatingKeysMap.forEach((frameLayout, movableFloatingActionKey) -> linesToWrite.add(movableFloatingActionKey.getData()));
         swipeKeyList.stream().map(swipeKeyView -> new SwipeKey(swipeKeyView).getData()).forEach(linesToWrite::add);
 
         // Save Config
@@ -212,7 +226,6 @@ public class EditorUI extends OnKeyEventListener.Stub {
         profiles.saveProfile(profileName, linesToWrite, profile.packageName, !profile.disabled);
 
         // Reload keymap if service running
-        RemoteServiceHelper.reloadKeymap(context);
     }
 
 
@@ -325,23 +338,34 @@ public class EditorUI extends OnKeyEventListener.Stub {
             // resize dpad from saved profile configuration
             float x1 = dpad.getWidth() - dpadLayout.getLayoutParams().width;
             float y1 = dpad.getHeight() - dpadLayout.getLayoutParams().height;
-            resizeView(dpadLayout, x1, y1);
+            resizeView(dpadLayout, (int) x1, (int) y1);
         }
     }
 
     private void addKey(KeymapProfileKey key) {
-        MovableFloatingActionKey floatingKey = new MovableFloatingActionKey(context, keyList::remove);
+        MovableFloatingActionKey floatingKey = new MovableFloatingActionKey(context, key1 -> {
+            floatingKeysMap.remove(key1);
+            mainView.removeView(key1.frameView);
+        });
 
         floatingKey.setText(key.code);
-        floatingKey.animate()
+        floatingKey.frameView.animate()
                 .x(key.x)
                 .y(key.y)
                 .setDuration(1000)
                 .start();
-        floatingKey.setOnClickListener(this::onClick);
+        floatingKey.setOnClickListener(this::onFloatingKeyClick);
 
-        mainView.addView(floatingKey);
-        keyList.add(floatingKey);
+        mainView.addView(floatingKey.frameView);
+        floatingKeysMap.put(floatingKey.frameView, floatingKey);
+    }
+
+    private void onFloatingKeyClick(View view) {
+        keyInFocus = key -> floatingKeysMap.get(view).setText(key);
+    }
+
+    public void onSwipeKeyClick(View view) {
+        keyInFocus = key -> swipeKeyViewMap.get(view).setText(key);
     }
 
     private void addKey(float x, float y) {
@@ -352,8 +376,34 @@ public class EditorUI extends OnKeyEventListener.Stub {
         addKey(key);
     }
 
-    public void onClick(View view) {
-        keyInFocus = key -> ((MovableFloatingActionKey)view).setText(key);
+    public void showMouseAimSettingsDialog() {
+        KeymapConfig keymapConfig = new KeymapConfig(context);
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        MouseAimConfigBinding binding = MouseAimConfigBinding.inflate(layoutInflater, null, false);
+
+        // Load settings
+        binding.rightClickCheckbox.setChecked(keymapConfig.rightClickMouseAim);
+        binding.graveKeyCheckbox.setChecked(keymapConfig.keyGraveMouseAim);
+        binding.applyNonLinearScalingCheckbox.setChecked(profile.mouseAimConfig.applyNonLinearScaling);
+        binding.sliderXSensitivity.setValue(profile.mouseAimConfig.xSensitivity);
+        binding.sliderYSensitivity.setValue(profile.mouseAimConfig.ySensitivity);
+
+        View view = binding.getRoot();
+        builder.setView(view)
+                .setPositiveButton(R.string.ok, (dialog, which) -> {
+                    // Save settings
+                    keymapConfig.rightClickMouseAim = binding.rightClickCheckbox.isChecked();
+                    keymapConfig.keyGraveMouseAim = binding.graveKeyCheckbox.isChecked();
+                    keymapConfig.applySharedPrefs();
+
+                    profile.mouseAimConfig.applyNonLinearScaling = binding.applyNonLinearScalingCheckbox.isChecked();
+                    profile.mouseAimConfig.xSensitivity = binding.sliderXSensitivity.getValue();
+                    profile.mouseAimConfig.ySensitivity = binding.sliderYSensitivity.getValue();
+                })
+                .setNegativeButton(R.string.cancel, null);
+        AlertDialog dialog = builder.create();
+        dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
+        dialog.show();
     }
 
     private void addCrosshair(float x, float y) {
@@ -384,7 +434,7 @@ public class EditorUI extends OnKeyEventListener.Stub {
                 if(overlayOpen) dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
                 dialog.show();
             });
-            binding.editButton.setOnClickListener(v -> MouseAimSettings.getKeyDialog(context).show());
+            binding.editButton.setOnClickListener(v -> showMouseAimSettingsDialog());
         }
         crosshair.animate().x(x).y(y)
                 .setDuration(500)
@@ -397,31 +447,38 @@ public class EditorUI extends OnKeyEventListener.Stub {
     private void addLeftClick(float x, float y) {
         if (leftClick == null) {
             leftClick = new MovableFloatingActionKey(context);
-            leftClick.key.setImageResource(R.drawable.ic_baseline_mouse_36);
-            mainView.addView(leftClick);
+            leftClick.frameView.setBackgroundResource(R.drawable.ic_baseline_mouse_36);
+            leftClick.setText(R.string.left_click);
+            mainView.addView(leftClick.frameView);
         }
-        leftClick.animate().x(x).y(y)
+        leftClick.frameView.animate().x(x).y(y)
                 .setDuration(500)
                 .start();
     }
 
     private void addRightClick(float x, float y) {
         if (rightClick == null) {
-            rightClick = new MovableFloatingActionKey(context, key -> rightClick = null);
-            rightClick.key.setImageResource(R.drawable.ic_baseline_mouse_36);
-            mainView.addView(rightClick);
+            rightClick = new MovableFloatingActionKey(context, key -> {
+                mainView.removeView(rightClick.frameView);
+                rightClick = null;
+            });
+            rightClick.frameView.setBackgroundResource(R.drawable.ic_baseline_mouse_36);
+            rightClick.setText(R.string.right_click);
+            mainView.addView(rightClick.frameView);
         }
-        rightClick.animate().x(x).y(y)
+        rightClick.frameView.animate().x(x).y(y)
                 .setDuration(500)
                 .start();
     }
 
     private void addSwipeKey() {
-        SwipeKeyView swipeKeyView = new SwipeKeyView(mainView, swipeKeyList::remove, this::onClick);
+        SwipeKeyView swipeKeyView = new SwipeKeyView(mainView, swipeKeyViewMap::remove, this::onSwipeKeyClick);
         swipeKeyList.add(swipeKeyView);
+        swipeKeyViewMap.put(swipeKeyView.button1.frameView, swipeKeyView.button1);
+        swipeKeyViewMap.put(swipeKeyView.button2.frameView, swipeKeyView.button2);
     }
 
-    public static void resizeView(View view, float x, float y) {
+    public static void resizeView(View view, int x, int y) {
         ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
         layoutParams.width += x;
         layoutParams.height += y;
@@ -449,7 +506,7 @@ public class EditorUI extends OnKeyEventListener.Stub {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                resizeView(rootView, event.getX(), event.getY());
+                resizeView(rootView, (int) event.getX(), (int) event.getY());
                 // Resize View from center point
                 if (defaultPivotX > 0) {
                     float newPivotX = rootView.getPivotX() - defaultPivotX;
